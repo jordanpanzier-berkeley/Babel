@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import {
   generateRecommendations,
+  lookupCover,
   searchBooks,
 } from './src/services/recommendationService.ts';
 
@@ -29,6 +30,19 @@ async function startServer() {
       return res.json({ suggestions });
     } catch {
       return res.json({ suggestions: [] });
+    }
+  });
+
+  // Best cover for one picked book (Google Books, then Open Library)
+  app.get('/api/cover', async (req, res) => {
+    try {
+      const title = String(req.query.title || '').trim();
+      const author = String(req.query.author || '').trim();
+      if (!title) return res.json({ coverUrl: null });
+      const coverUrl = await lookupCover(title, author && author !== 'Unknown' ? author : undefined);
+      return res.json({ coverUrl: coverUrl ?? null });
+    } catch {
+      return res.json({ coverUrl: null });
     }
   });
 

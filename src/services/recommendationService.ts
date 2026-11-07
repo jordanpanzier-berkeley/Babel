@@ -136,17 +136,34 @@ function authorMatches(requested: string, listed: string[] = []): boolean {
   return listed.some((a) => normalizeName(a).split(' ').includes(lastName));
 }
 
+// Ask Open Library for each work's best English edition alongside the work itself.
+// (It only returns the edition when the key fields are requested too.)
+const SEARCH_FIELDS =
+  'key,title,author_name,cover_i,edition_count,editions,editions.key,editions.language,editions.cover_i';
+
+/**
+ * A work's default cover can be any language's edition (e.g. a Spanish "Never Let Me Go").
+ * Prefer the English edition's cover; fall back to the work's default cover.
+ */
+function coverIdFor(doc: any): number | undefined {
+  const english = (doc.editions?.docs ?? []).find(
+    (e: any) => e.cover_i && (e.language ?? []).includes('eng')
+  );
+  return english?.cover_i ?? doc.cover_i ?? undefined;
+}
+
 /**
  * Find a cover only for a confirmed match: same title and same author.
- * Among matches, prefer the most widely published edition (usually the familiar cover).
+ * Among matches, prefer the most widely published work, then its English edition's cover.
  * Returns undefined when nothing matches, so the page shows a plain title tile instead.
  */
-export async function lookupCover(title: string, author?: string): Promise<string | undefined> {
+async function openLibraryCover(title: string, author?: string): Promise<string | undefined> {
   try {
     const params = new URLSearchParams({
       title,
       limit: '10',
-      fields: 'title,author_name,cover_i,edition_count',
+      lang: 'en',
+      fields: SEARCH_FIELDS,
     });
     if (author) params.set('author', author);
 
@@ -160,18 +177,76 @@ export async function lookupCover(title: string, author?: string): Promise<strin
     const wanted = normalizeTitle(title);
     const matches = (data.docs || []).filter(
       (doc: any) =>
-        doc.cover_i &&
+        coverIdFor(doc) &&
         normalizeTitle(String(doc.title || '')) === wanted &&
         (!author || authorMatches(author, doc.author_name))
     );
     if (matches.length === 0) return undefined;
 
     matches.sort((a: any, b: any) => (b.edition_count || 0) - (a.edition_count || 0));
-    return `https://covers.openlibrary.org/b/id/${matches[0].cover_i}-L.jpg`;
+    return `https://covers.openlibrary.org/b/id/${coverIdFor(matches[0])}-L.jpg`;
   } catch {
     // Network error or timeout: no cover rather than a wrong one
     return undefined;
   }
+}
+
+/**
+ * Publisher-quality cover from Google Books, only for a confirmed title + author match.
+ * Needs GOOGLE_BOOKS_API_KEY (server-side only). Without it, or on any error, returns undefined.
+ */
+async function googleBooksCover(title: string, author?: string): Promise<string | undefined> {
+  const key = process.env.GOOGLE_BOOKS_API_KEY;
+  if (!key) return undefined;
+  try {
+    const lastName = author ? normalizeName(author).split(' ').pop() : '';
+    const params = new URLSearchParams({
+      q: `intitle:"${title}"` + (lastName ? ` inauthor:"${lastName}"` : ''),
+      maxResults: '10',
+      printType: 'books',
+      fields: 'items(volumeInfo(title,authors,language,imageLinks/thumbnail))',
+      key,
+    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?${params}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return undefined;
+
+    const wanted = normalizeTitle(title);
+    const matches = ((await res.json()).items ?? [])
+      .map((item: any) => item.volumeInfo ?? {})
+      .filter(
+        (v: any) =>
+          v.imageLinks?.thumbnail &&
+          normalizeTitle(String(v.title || '')) === wanted &&
+          (!author || authorMatches(author, v.authors))
+      );
+    if (matches.length === 0) return undefined;
+
+    // English editions first; otherwise Google's relevance order
+    const best = matches.find((v: any) => v.language === 'en') ?? matches[0];
+    return String(best.imageLinks.thumbnail)
+      .replace(/^http:/, 'https:')
+      .replace('&edge=curl', '')
+      .concat('&fife=w400-h600'); // larger image than the default 128px thumbnail
+  } catch {
+    return undefined;
+  }
+}
+
+// Remember covers already found so repeat books don't use up the daily lookup limit.
+// Misses aren't remembered, so a brief network error doesn't stick.
+const coverCache = new Map<string, string>();
+
+/** Cover for a book: Google Books first, then Open Library; undefined means show the title tile. */
+export async function lookupCover(title: string, author?: string): Promise<string | undefined> {
+  const cacheKey = `${normalizeTitle(title)}|${author ? normalizeName(author) : ''}`;
+  const cached = coverCache.get(cacheKey);
+  if (cached) return cached;
+  const cover = (await googleBooksCover(title, author)) ?? (await openLibraryCover(title, author));
+  if (cover) coverCache.set(cacheKey, cover);
+  return cover;
 }
 
 /** Split "Title by Author" (how the app sends picks) into its parts. */
@@ -195,7 +270,8 @@ export async function searchBooks(query: string): Promise<BookSuggestion[]> {
   const cleanQ = query.trim();
   if (cleanQ.length < 2) return [];
 
-  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(cleanQ)}&limit=6`;
+  const params = new URLSearchParams({ q: cleanQ, limit: '6', lang: 'en', fields: SEARCH_FIELDS });
+  const url = `https://openlibrary.org/search.json?${params}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3500);
   const res = await fetch(url, { signal: controller.signal });
@@ -208,7 +284,7 @@ export async function searchBooks(query: string): Promise<BookSuggestion[]> {
   return docs.slice(0, 6).map((doc: any) => ({
     title: String(doc.title || '').trim(),
     author: doc.author_name && doc.author_name.length > 0 ? doc.author_name[0] : 'Unknown',
-    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : undefined,
+    coverUrl: coverIdFor(doc) ? `https://covers.openlibrary.org/b/id/${coverIdFor(doc)}-M.jpg` : undefined,
   }));
 }
 

@@ -87,11 +87,27 @@ export const InputScreen: React.FC<InputScreenProps> = ({
     runSearch(value);
   };
 
+  // Swap in the best available cover (Google Books first) once the server finds it
+  const upgradeCover = async (book: BookSuggestion) => {
+    try {
+      const params = new URLSearchParams({ title: book.title, author: book.author });
+      const res = await fetch(`/api/cover?${params}`);
+      if (!res.ok) return;
+      const { coverUrl } = await res.json();
+      if (!coverUrl || coverUrl === book.coverUrl) return;
+      setPicks((prev) => prev.map((p) => (sameBook(p, book) ? { ...p, coverUrl } : p)));
+    } catch {
+      // Keep the thumbnail we already have
+    }
+  };
+
   const pick = (suggestion: BookSuggestion) => {
+    const isNew = picks.length < MAX_PICKS && !picks.some((p) => sameBook(p, suggestion));
     setPicks((prev) => {
       if (prev.length >= MAX_PICKS || prev.some((p) => sameBook(p, suggestion))) return prev;
       return [...prev, suggestion];
     });
+    if (isNew) upgradeCover(suggestion);
     requestIdRef.current++; // drop any search still in flight
     setQuery('');
     setSuggestions([]);
@@ -232,7 +248,7 @@ export const InputScreen: React.FC<InputScreenProps> = ({
           if (!book) {
             return <li key={`empty-${i}`} className="slot slot--empty" aria-hidden="true" />;
           }
-          const showCover = book.coverUrl && !coverErrors[coverKey(book)];
+          const showCover = book.coverUrl && !coverErrors[book.coverUrl]; // failures are per image
           return (
             <li key={coverKey(book)} className="slot">
               <div className="frame slot__frame">
@@ -240,7 +256,7 @@ export const InputScreen: React.FC<InputScreenProps> = ({
                   <img
                     src={book.coverUrl}
                     alt={`Cover of ${book.title}`}
-                    onError={() => setCoverErrors((prev) => ({ ...prev, [coverKey(book)]: true }))}
+                    onError={() => setCoverErrors((prev) => ({ ...prev, [book.coverUrl as string]: true }))}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
