@@ -1,55 +1,523 @@
 @import "tailwindcss";
 
-@layer base {
+/*
+ * Visual system inspired by graphite.tennis/collections/archive:
+ * pure black page, white text, a wide display face that stretches on hover.
+ * Off-white blocks ("chips") are reserved for things you can click.
+ */
+
+:root {
+  --font-display: 'Roboto', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+
+  --bg: #9AE2C9;           /* mint page background */
+  --fg: #CA403E;           /* red buttons */
+  --text: #A52F2D;         /* red text: 4.6:1 on mint */
+  --on-fg: #9AE2C9;        /* text on red buttons */
+  --dim: var(--text);      /* secondary text uses the same red */
+  --on-fg-dim: var(--on-fg);
+  --line: rgba(202, 64, 62, 0.35);
+  --placeholder: rgba(202, 64, 62, 0.12);
+  --menu-hover: #8E2826;   /* darker on hover: mint text 6:1 */
+  --menu-line: rgba(154, 226, 201, 0.35);
+  --why: #DE7A78;          /* lighter red for the "Why" lines (low contrast by choice) */
+  --error: #8B1E1C;        /* dark red so errors stand apart: 6.1:1 on mint */
+
+  --cols: 12;
+  --gap: 24px;
+  --pad: 24px;
+  --tap: 44px;
+}
+
+@media (max-width: 1024px) {
   :root {
-    --color-black: #110D0C;
-    --color-red: #C82D18;
-    --color-green: #37784D;
-    --color-script-green: #3C7E5A;
-    --color-yellow: #F0B907;
-    --color-cream: #F4F4E8;
-    --color-cyan: #87B5B2;
-    --color-ink: #1C211A;
+    --cols: 6;
+    --gap: 16px;
+    --pad: 16px;
+  }
+}
+
+@layer base {
+  html {
+    background: var(--bg);
   }
 
   body {
-    background-color: #110D0C;
-    color: #1C211A;
-    font-family: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
-    padding: 0;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    animation: page-fade 0.6s ease-out both;
   }
 
   ::selection {
-    background-color: #C82D18;
-    color: #F4F4E8;
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 3px;
   }
 }
 
-.font-script {
-  font-family: 'Pacifico', cursive;
+@keyframes page-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.font-condensed {
-  font-family: 'Barlow Condensed', sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none; }
+  .label__text { transition: none !important; }
 }
 
-/* Custom scrollbar */
+/* ---------- Type ---------- */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 85;
+}
+
+@media (max-width: 1024px) {
+  .display {
+    font-size: 20px;
+  }
+}
+
+/* Small uppercase labels: never below 14px */
+.micro {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.why {
+  color: var(--why);
+}
+
+/* ---------- 12-column grid (6 on smaller screens) ---------- */
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  column-gap: var(--gap);
+  padding-left: max(var(--pad), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--pad), env(safe-area-inset-right, 0px));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.grid-12 > * {
+  grid-column: 1 / -1;
+}
+
+/* Left label (3 cols) + content (rest); stacks on smaller screens */
+.col-label {
+  grid-column: 1 / span 3 !important;
+}
+
+.col-main {
+  grid-column: 4 / -1 !important;
+}
+
+@media (max-width: 1024px) {
+  .col-label {
+    grid-column: 1 / span 2 !important;
+  }
+
+  .col-main {
+    grid-column: 3 / -1 !important;
+  }
+
+  .col-main--stack {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* ---------- Buttons: the only off-white blocks ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: var(--tap);
+  padding: 0 14px;
+  background: var(--fg);
+  color: var(--bg);
+  border: 1px solid var(--fg);
+  border-radius: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Secondary button: same shape, outlined */
+.chip--ghost {
+  background: transparent;
+  color: var(--fg);
+}
+
+.chip--ghost:not(:disabled):hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.chip-lg {
+  min-height: 52px;
+  padding: 0 20px;
+}
+
+.chip:disabled {
+  opacity: 0.5;
+}
+
+/* Narrow phones: keep "+ Add" and "Recommend" on one row */
+@media (max-width: 440px) {
+  .chip-lg {
+    padding: 0 14px;
+    font-size: 18px;
+  }
+}
+
+/* Button text: a hidden full-width copy fixes the size; only the visible text widens */
+.label {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.label__ghost,
+.label__text {
+  grid-area: 1 / 1;
+}
+
+.label__ghost {
+  visibility: hidden;
+  font-variation-settings: 'wdth' 100;
+}
+
+.label__text {
+  transition: font-variation-settings 0.3s ease;
+}
+
+.chip:not(:disabled):hover .label__text {
+  font-variation-settings: 'wdth' 100;
+}
+
+/* ---------- Page ---------- */
+
+.page {
+  padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  padding-bottom: 120px;
+}
+
+/* Input page: form sits in the vertical middle of the window */
+.page--center {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding-top: 100px;
+  padding-bottom: 100px;
+  box-sizing: border-box;
+}
+
+.page--center > * {
+  flex: 1;
+}
+
+/* Secondary note text ("Enter 1–5 books", "Based on …") */
+.note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+/* ---------- Input form ---------- */
+
+.field__input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--text);
+  border-radius: 0;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 24px;
+  padding: 10px 0;
+  outline: none;
+}
+
+@media (max-width: 1024px) {
+  .field__input {
+    font-size: 18px;
+  }
+}
+
+.field__input::placeholder {
+  color: var(--text);
+  opacity: 0.5; /* faded so empty rows don't look filled */
+}
+
+.field__input:focus {
+  border-bottom-width: 3px;
+  padding-bottom: 8px;
+}
+
+/* Dropdown of suggestions */
+.menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--text);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-bottom: 1px solid var(--menu-line);
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.menu__item:last-child {
+  border-bottom: none;
+}
+
+button.menu__item.is-active,
+button.menu__item:focus-visible {
+  background: var(--menu-hover);
+  outline: none;
+}
+
+button.menu__item:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.menu__thumb {
+  width: 28px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--menu-line);
+}
+
+.menu__sub {
+  color: var(--on-fg-dim);
+}
+
+/* Error: sits right under the button that failed */
+.alert {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  color: var(--error);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.alert::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  background: var(--error);
+}
+
+/* ---------- Input page: search + shelf ---------- */
+
+.shelf-page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: max(var(--pad), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--pad), env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+}
+
+
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.slot--empty {
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--text);
+  opacity: 0.45;
+}
+
+/* Full title and author: wrap between words; hyphenate a word only if it can't fit */
+.slot__title,
+.slot__author {
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.slot__title {
+  margin-top: 4px;
+}
+
+.slot__author {
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Phones: 3 slots per row so titles and authors have room */
+@media (max-width: 480px) {
+  .shelf {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 12px;
+  }
+}
+
+/* Remove button sits on the cover; its tap area reaches 44px */
+.slot__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--fg);
+  color: var(--on-fg);
+  border: none;
+}
+
+.slot__remove::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* ---------- Results: ordered list ---------- */
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--gap);
+  row-gap: 40px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.result {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .results {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 32px;
+  }
+
+  .result {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+.frame {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background: var(--placeholder);
+}
+
+.frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: page-fade 0.4s ease both;
+}
+
+/* Button floating at the bottom center of the screen */
+.float-bottom {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #ECECE0;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #87B5B2;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #C82D18;
+  background: var(--fg);
 }

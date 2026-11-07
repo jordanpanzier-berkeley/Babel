@@ -1,6 +1,6 @@
 {
   "name": "Babel",
-  "description": "Minimalist reading recommendations based on your favorite books, styled with distinctive 90s album aesthetics.",
+  "description": "Book recommendations based on your favorites.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

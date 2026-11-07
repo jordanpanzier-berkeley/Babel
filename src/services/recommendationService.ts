@@ -10,7 +10,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Sci-Fi",
       description: "A washed-up computer hacker is hired for one last desperate run against an artificial intelligence. It pioneered the cyberpunk genre with vivid neo-noir atmosphere.",
       reason: `Echoes the visionary world-building and dense speculative atmosphere of ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/283860-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/283860-L.jpg"
     },
     {
       title: "The Left Hand of Darkness",
@@ -18,7 +18,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Sci-Fi",
       description: "A human envoy navigates political intrigue on an icy world where inhabitants can change biological sex at will. A profound exploration of gender, culture, and solitude.",
       reason: `Shares ${input}'s deep sociopolitical intrigue and philosophical depth.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/8315250-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/8315250-L.jpg"
     },
     {
       title: "Solaris",
@@ -26,7 +26,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Sci-Fi",
       description: "A psychologist arrives at a research station orbiting an ocean planet that materializes memories into physical form. A haunting psychological examination of human limits in the face of the unknown.",
       reason: `Matches the eerie existential mystery and cerebral pacing found in ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/10543679-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/10543679-L.jpg"
     },
     {
       title: "Hyperion",
@@ -34,7 +34,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Sci-Fi",
       description: "Seven pilgrims travel across space toward an enigmatic creature worshipped as a god of pain. Told through interconnected confessions, it balances sprawling galactic scale with deeply personal stakes.",
       reason: `Delivers the same expansive scale, complex lore, and narrative tension as ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/6652458-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/6652458-L.jpg"
     }
   ],
   fiction: (input) => [
@@ -44,7 +44,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Literary Fiction",
       description: "An eccentric group of classics students at an elite college cross ethical boundaries with devastating consequences. A gripping inverted mystery exploring obsession, beauty, and guilt.",
       reason: `Channels the psychological tension, moral ambiguity, and intellectual allure of ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/744854-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/744854-L.jpg"
     },
     {
       title: "Never Let Me Go",
@@ -52,7 +52,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Literary Fiction",
       description: "Three friends grow up at an idyllic English boarding school harboring a dark purpose about their future. A tender and heartbreaking meditation on memory, mortality, and what gives life meaning.",
       reason: `Features the same understated emotional resonance and quiet foreboding as ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/11186794-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/11186794-L.jpg"
     },
     {
       title: "Kafka on the Shore",
@@ -60,7 +60,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Magical Realism",
       description: "A teenage runaway and an elderly man with unusual abilities cross paths amid strange supernatural events. It weaves dreams, myths, and reality into a mesmerizing puzzle.",
       reason: `Explores surreal dreamlike logic and rich internal journeys similar to ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/8235105-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/8235105-L.jpg"
     },
     {
       title: "If on a winter's night a traveler",
@@ -68,7 +68,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Fiction",
       description: "A reader attempts to finish an alluring novel only to find each chapter interrupted by a completely different story. An inventive, playful ode to the sheer adventure of reading.",
       reason: `Shares ${input}'s fascination with intricate structure and immersive prose.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/12818862-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/12818862-L.jpg"
     }
   ],
   dystopian: (input) => [
@@ -78,7 +78,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Dystopian",
       description: "In a future where printed literature is outlawed, a fireman responsible for burning books begins questioning his role. A lyrical defense of independent thought and preservation of knowledge.",
       reason: `Parallels ${input}'s focus on ideological oppression and intellectual rebellion.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/9255566-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/9255566-L.jpg"
     },
     {
       title: "Brave New World",
@@ -86,7 +86,7 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Dystopian",
       description: "Citizens are engineered into rigid castes and kept docile through state-sanctioned conditioning and synthetic pleasure. It chillingly questions the price of total societal comfort.",
       reason: `Explores the terrifying price of conformity and social engineering seen in ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/8231823-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/8231823-L.jpg"
     },
     {
       title: "We",
@@ -94,14 +94,16 @@ const CURATED_FALLBACKS: Record<string, (inputSummary: string) => BookRecommenda
       genre: "Dystopian",
       description: "A mathematician in a glass-enclosed city ruled by numbers and schedules rediscovers rebellious passion. The seminal classic that inspired modern totalitarian fiction.",
       reason: `Captures the mathematical rigidity and rising individual defiance central to ${input}.`,
-      coverUrl: "https://covers.openlibrary.org/b/id/6513251-M.jpg"
+      coverUrl: "https://covers.openlibrary.org/b/id/6513251-L.jpg"
     }
   ]
 };
 
 export function getSmartFallback(books: string[]): BookRecommendation[] {
   const combined = books.join(' ').toLowerCase();
-  const inputSummary = books.slice(0, 2).join(' and ');
+  // Inputs may arrive as "Title by Author"; the canned reasons read better with titles only
+  const titles = books.map((b) => b.replace(/\s+by\s+.+$/i, '').trim());
+  const inputSummary = titles.slice(0, 2).join(' and ');
   if (combined.includes('dune') || combined.includes('neuromancer') || combined.includes('space') || combined.includes('mars') || combined.includes('robot') || combined.includes('cyber') || combined.includes('foundation')) {
     return CURATED_FALLBACKS.scifi(inputSummary);
   }
@@ -123,10 +125,10 @@ export async function lookupCover(title: string, author?: string): Promise<strin
     const data = await res.json();
     const doc = data.docs && data.docs[0];
     if (doc && doc.cover_i) {
-      return `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
+      return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
     }
     if (doc && doc.isbn && doc.isbn[0]) {
-      return `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-M.jpg`;
+      return `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg`;
     }
   } catch {
     // Return undefined on error/timeout
@@ -151,7 +153,7 @@ export async function searchBooks(query: string): Promise<BookSuggestion[]> {
   return docs.slice(0, 6).map((doc: any) => ({
     title: String(doc.title || '').trim(),
     author: doc.author_name && doc.author_name.length > 0 ? doc.author_name[0] : 'Unknown',
-    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-S.jpg` : undefined,
+    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : undefined,
   }));
 }
 

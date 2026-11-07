@@ -4,40 +4,50 @@
  */
 
 import React, { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { InputScreen } from './components/InputScreen.tsx';
 import { OutputScreen } from './components/OutputScreen.tsx';
-import { BookRecommendation, RecommendationResponse } from './types.ts';
+import { ButtonLabel } from './components/ButtonLabel.tsx';
+import { BookRecommendation, BookSuggestion, RecommendationResponse } from './types.ts';
 
 export default function App() {
   const [screen, setScreen] = useState<'input' | 'output'>('input');
-  const [books, setBooks] = useState<string[]>(['', '', '']);
+  // Books the user has locked in by picking a search suggestion (max 5)
+  const [picks, setPicks] = useState<BookSuggestion[]>([]);
   const [recommendations, setRecommendations] = useState<BookRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // After visiting results, coming home shouldn't jump into the first field
+  const [hasReturned, setHasReturned] = useState(false);
 
   const handleSubmit = async () => {
-    const validBooks = books.map((b) => b.trim()).filter((b) => b.length > 0);
-
-    if (validBooks.length === 0) {
-      setError('PLEASE ENTER AT LEAST 1 BOOK TITLE');
+    if (picks.length === 0) {
+      setError('Pick a book first.');
       return;
     }
+
+    // "Title by Author" is more precise for the recommender than a bare title
+    const validBooks = picks.map((p) => (p.author && p.author !== 'Unknown' ? `${p.title} by ${p.author}` : p.title));
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/recommend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ books: validBooks }),
-      });
+      let res: Response;
+      try {
+        res = await fetch('/api/recommend', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ books: validBooks }),
+        });
+      } catch {
+        throw new Error("Can't connect. Check your internet.");
+      }
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'FAILED TO FETCH RECOMMENDATIONS');
+        throw new Error("Couldn't get recommendations.");
       }
 
       const data: RecommendationResponse = await res.json();
@@ -45,57 +55,53 @@ export default function App() {
       if (data.recommendations && data.recommendations.length > 0) {
         setRecommendations(data.recommendations);
         setScreen('output');
+        window.scrollTo(0, 0);
       } else {
-        throw new Error('NO RECOMMENDATIONS FOUND. PLEASE TRY DIFFERENT TITLES.');
+        throw new Error('No matches. Try other titles.');
       }
     } catch (err: any) {
-      setError(err?.message || 'AN ERROR OCCURRED. PLEASE TRY AGAIN.');
+      setError(err?.message || "Couldn't get recommendations.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBack = () => {
+    setHasReturned(true);
     setError(null);
     setScreen('input');
+    window.scrollTo(0, 0);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#110D0C] flex flex-col items-center justify-start sm:justify-center p-0 sm:p-4 md:p-8 font-condensed">
-      <div className="w-full max-w-2xl bg-[#F4F4E8] border-2 border-[#110D0C] shadow-2xl flex flex-col overflow-hidden">
-        {/* Clean Header: "Babel" and "Reading Recommendations", same heading font */}
-        <header className="bg-[#110D0C] px-6 py-4 border-b-2 border-[#110D0C] flex items-baseline gap-3">
-          <span className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#F4F4E8] select-none font-condensed">
-            Babel
-          </span>
-          <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-[#87B5B2] font-condensed">
-            Reading Recommendations
-          </span>
-        </header>
+    <div className="min-h-svh flex flex-col">
+      <main className={`flex-1 page ${screen === 'input' ? 'page--center' : ''}`}>
+        {screen === 'input' && (
+          <InputScreen
+            picks={picks}
+            setPicks={setPicks}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            error={error}
+            autoFocusFirst={!hasReturned}
+          />
+        )}
 
-        {/* Main Interface (Clean cream paper, no watermarks) */}
-        <main className="flex-1 bg-[#F4F4E8] flex flex-col min-h-[500px]">
-          {/* Screen 1: Input Screen */}
-          {screen === 'input' && (
-            <InputScreen
-              books={books}
-              setBooks={setBooks}
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-              error={error}
-            />
-          )}
+        {screen === 'output' && (
+          <OutputScreen recommendations={recommendations} inputBooks={picks.map((p) => p.title)} />
+        )}
+      </main>
 
-          {/* Screen 2: Output Screen */}
-          {screen === 'output' && (
-            <OutputScreen
-              recommendations={recommendations}
-              inputBooks={books}
-              onBack={handleBack}
-            />
-          )}
-        </main>
-      </div>
+      {screen === 'output' && (
+        <button
+          type="button"
+          onClick={handleBack}
+          className="chip chip-lg display float-bottom"
+        >
+          <ArrowLeft className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
+          <ButtonLabel text="Back" />
+        </button>
+      )}
     </div>
   );
 }
