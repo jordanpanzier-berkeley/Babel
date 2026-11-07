@@ -15,6 +15,8 @@ interface InputScreenProps {
   autoFocusFirst?: boolean;
 }
 
+const coverKey = (b: BookSuggestion) => `${b.title}|${b.author}`;
+
 const sameBook = (a: BookSuggestion, b: BookSuggestion) =>
   a.title.toLowerCase() === b.title.toLowerCase() && a.author.toLowerCase() === b.author.toLowerCase();
 
@@ -33,6 +35,8 @@ export const InputScreen: React.FC<InputScreenProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [coverErrors, setCoverErrors] = useState<Record<string, boolean>>({});
+  // Books whose cover lookup hasn't answered yet: their slot stays blank until it does
+  const [pendingCovers, setPendingCovers] = useState<Record<string, boolean>>({});
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
@@ -87,17 +91,23 @@ export const InputScreen: React.FC<InputScreenProps> = ({
     runSearch(value);
   };
 
-  // Swap in the best available cover (Google Books first) once the server finds it
-  const upgradeCover = async (book: BookSuggestion) => {
+  // Only the final cover is shown: blank slot while looking, then the cover (or the title tile if none exists)
+  const fetchCover = async (book: BookSuggestion) => {
+    const key = coverKey(book);
+    setPendingCovers((prev) => ({ ...prev, [key]: true }));
     try {
       const params = new URLSearchParams({ title: book.title, author: book.author });
       const res = await fetch(`/api/cover?${params}`);
-      if (!res.ok) return;
-      const { coverUrl } = await res.json();
-      if (!coverUrl || coverUrl === book.coverUrl) return;
-      setPicks((prev) => prev.map((p) => (sameBook(p, book) ? { ...p, coverUrl } : p)));
+      const coverUrl = res.ok ? (await res.json()).coverUrl : null;
+      if (coverUrl) setPicks((prev) => prev.map((p) => (sameBook(p, book) ? { ...p, coverUrl } : p)));
     } catch {
-      // Keep the thumbnail we already have
+      // No cover: the title tile shows
+    } finally {
+      setPendingCovers((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
     }
   };
 
@@ -105,9 +115,9 @@ export const InputScreen: React.FC<InputScreenProps> = ({
     const isNew = picks.length < MAX_PICKS && !picks.some((p) => sameBook(p, suggestion));
     setPicks((prev) => {
       if (prev.length >= MAX_PICKS || prev.some((p) => sameBook(p, suggestion))) return prev;
-      return [...prev, suggestion];
+      return [...prev, { title: suggestion.title, author: suggestion.author }];
     });
-    if (isNew) upgradeCover(suggestion);
+    if (isNew) fetchCover(suggestion);
     requestIdRef.current++; // drop any search still in flight
     setQuery('');
     setSuggestions([]);
@@ -172,7 +182,6 @@ export const InputScreen: React.FC<InputScreenProps> = ({
   }, [picks.length]);
 
   const showMenu = isOpen && query.trim().length >= 2 && (isSearching || hasSearched);
-  const coverKey = (b: BookSuggestion) => `${b.title}|${b.author}`;
 
   return (
     <section className="shelf-page">
@@ -224,11 +233,6 @@ export const InputScreen: React.FC<InputScreenProps> = ({
                     onMouseEnter={() => setActiveIndex(sIdx)}
                     className={`menu__item ${activeIndex === sIdx ? 'is-active' : ''}`}
                   >
-                    {sug.coverUrl ? (
-                      <img src={sug.coverUrl} alt="" className="menu__thumb" />
-                    ) : (
-                      <span className="menu__thumb" />
-                    )}
                     <span className="min-w-0 flex flex-col gap-1">
                       <span className="text-base leading-tight truncate">{sug.title}</span>
                       <span className="micro truncate">{already ? 'On your shelf' : sug.author}</span>
@@ -248,7 +252,8 @@ export const InputScreen: React.FC<InputScreenProps> = ({
           if (!book) {
             return <li key={`empty-${i}`} className="slot slot--empty" aria-hidden="true" />;
           }
-          const showCover = book.coverUrl && !coverErrors[book.coverUrl]; // failures are per image
+          const isPending = pendingCovers[coverKey(book)];
+          const showCover = !isPending && book.coverUrl && !coverErrors[book.coverUrl]; // failures are per image
           return (
             <li key={coverKey(book)} className="slot">
               <div className="frame slot__frame">
@@ -258,7 +263,7 @@ export const InputScreen: React.FC<InputScreenProps> = ({
                     alt={`Cover of ${book.title}`}
                     onError={() => setCoverErrors((prev) => ({ ...prev, [book.coverUrl as string]: true }))}
                   />
-                ) : (
+                ) : isPending ? null : (
                   <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
                     <span className="micro line-clamp-4">{book.title}</span>
                   </div>

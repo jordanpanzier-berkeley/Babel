@@ -334,13 +334,6 @@ button.menu__item:disabled {
   cursor: default;
 }
 
-.menu__thumb {
-  width: 28px;
-  height: 40px;
-  flex-shrink: 0;
-  object-fit: cover;
-  background: var(--menu-line);
-}
 
 .menu__sub {
   color: var(--on-fg-dim);
@@ -428,6 +421,11 @@ button.menu__item:disabled {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px 12px;
   }
+}
+
+/* Shelf covers appear at once, no fade */
+.slot__frame > img {
+  animation: none;
 }
 
 /* Remove button sits on the cover; its tap area reaches 44px */

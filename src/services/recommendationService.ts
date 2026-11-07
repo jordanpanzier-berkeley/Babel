@@ -270,7 +270,8 @@ export async function searchBooks(query: string): Promise<BookSuggestion[]> {
   const cleanQ = query.trim();
   if (cleanQ.length < 2) return [];
 
-  const params = new URLSearchParams({ q: cleanQ, limit: '6', lang: 'en', fields: SEARCH_FIELDS });
+  // Suggestions are text only (covers come from /api/cover after a pick)
+  const params = new URLSearchParams({ q: cleanQ, limit: '6', fields: 'title,author_name' });
   const url = `https://openlibrary.org/search.json?${params}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3500);
@@ -284,7 +285,6 @@ export async function searchBooks(query: string): Promise<BookSuggestion[]> {
   return docs.slice(0, 6).map((doc: any) => ({
     title: String(doc.title || '').trim(),
     author: doc.author_name && doc.author_name.length > 0 ? doc.author_name[0] : 'Unknown',
-    coverUrl: coverIdFor(doc) ? `https://covers.openlibrary.org/b/id/${coverIdFor(doc)}-M.jpg` : undefined,
   }));
 }
 
