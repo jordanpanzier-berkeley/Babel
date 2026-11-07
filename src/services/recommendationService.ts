@@ -303,19 +303,27 @@ export async function generateRecommendations(
         },
       });
 
+      // With 2+ favorites, favor books that connect several of them and list those first
+      const overlapRule =
+        cleanBooks.length > 1
+          ? `
+3. Strongly prefer books that share qualities with SEVERAL of the input books over books that resemble only one.
+   Order the list so books that connect to the most input books come first; books matching a single input go last.`
+          : '';
+
       const prompt = `Based on these ${cleanBooks.length} user-provided favorite book(s):
 ${cleanBooks.map((b, i) => `${i + 1}. ${b}`).join('\n')}
 
 Suggest 6 similar reading recommendations.
 Requirements:
 1. Suggest 6 high-quality, closely matching recommendations.
-2. Do NOT suggest any of the books provided in the input list, under any title or edition.
-3. For each book, provide:
+2. Do NOT suggest any of the books provided in the input list, under any title or edition.${overlapRule}
+${cleanBooks.length > 1 ? '4' : '3'}. For each book, provide:
    - title: exact book title
    - author: author name
    - genre: as simple as possible (e.g. Fiction, Sci-Fi, Memoir, Thriller, Dystopian, Fantasy)
    - description: strictly 1 to 2 sentences summarizing what makes it compelling without spoiling anything.
-   - reason: a succinct 1-sentence reason why this is recommended specifically based on the user's input book(s).`;
+   - reason: a succinct 1-sentence reason why this is recommended specifically based on the user's input book(s); when it connects to several of them, name them.`;
 
       const generatePromise = ai.models.generateContent({
         model: 'gemini-3.1-flash-lite',
