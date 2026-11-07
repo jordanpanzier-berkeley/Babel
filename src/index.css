@@ -79,7 +79,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   body { animation: none; }
-  .label__text { transition: none !important; }
+  .label__text,
+  .slot__remove svg { transition: none !important; }
 }
 
 /* ---------- Type ---------- */
@@ -449,6 +450,15 @@ button.menu__item:disabled {
   content: '';
   position: absolute;
   inset: -8px;
+}
+
+/* Like the text buttons: the button keeps its size, the × stretches sideways on hover */
+.slot__remove svg {
+  transition: transform 0.3s ease;
+}
+
+.slot__remove:not(:disabled):hover svg {
+  transform: scaleX(1.6);
 }
 
 /* ---------- Results: ordered list ---------- */
