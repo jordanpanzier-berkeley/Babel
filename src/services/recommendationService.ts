@@ -128,12 +128,21 @@ function normalizeName(name: string): string {
     .trim();
 }
 
-/** True when any listed author contains the requested author's last name. */
+/**
+ * True when a listed author has the requested author's last name and, when both names have one,
+ * the same first initial (so "Frank Herbert" doesn't match "Brian Herbert").
+ */
 function authorMatches(requested: string, listed: string[] = []): boolean {
   const parts = normalizeName(requested).split(' ').filter(Boolean);
   const lastName = parts[parts.length - 1];
   if (!lastName) return true;
-  return listed.some((a) => normalizeName(a).split(' ').includes(lastName));
+  const initial = parts.length > 1 ? parts[0][0] : '';
+  return listed.some((a) => {
+    const other = normalizeName(a).split(' ').filter(Boolean);
+    if (!other.includes(lastName)) return false;
+    const otherInitial = other.length > 1 ? other[0][0] : '';
+    return !initial || !otherInitial || initial === otherInitial;
+  });
 }
 
 // Ask Open Library for each work's best English edition alongside the work itself.
@@ -191,6 +200,34 @@ async function openLibraryCover(title: string, author?: string): Promise<string 
   }
 }
 
+// Movie/TV editions usually carry a film poster; skip them when choosing a cover
+const TIE_IN = /tie-?in|major motion picture|now a (?:major )?(?:film|movie|motion picture|netflix|hbo|tv|television)|soon to be a|netflix|hbo max|apple tv|hulu|prime video|tv series|television series/i;
+
+/** Year from Google's publishedDate ("1965", "1965-08", "2021-10-12"); undated editions sort last. */
+function publishedYear(v: any): number {
+  const year = parseInt(String(v.publishedDate || '').slice(0, 4), 10);
+  return Number.isFinite(year) ? year : Infinity;
+}
+
+/**
+ * Choose the most "classic" Google Books edition for a confirmed title + author:
+ * skip movie/TV tie-ins, keep English editions when any exist, then take the oldest edition with an image.
+ */
+export function pickClassicVolume(volumes: any[], title: string, author?: string): any | undefined {
+  const wanted = normalizeTitle(title);
+  const matches = volumes.filter(
+    (v) =>
+      v.imageLinks?.thumbnail &&
+      normalizeTitle(String(v.title || '')) === wanted &&
+      (!author || authorMatches(author, v.authors)) &&
+      !TIE_IN.test(`${v.title ?? ''} ${v.subtitle ?? ''} ${v.description ?? ''}`)
+  );
+  const english = matches.filter((v) => v.language === 'en');
+  const pool = english.length ? english : matches;
+  // Oldest first; equal years keep Google's relevance order (sort is stable)
+  return [...pool].sort((a, b) => publishedYear(a) - publishedYear(b))[0];
+}
+
 /**
  * Publisher-quality cover from Google Books, only for a confirmed title + author match.
  * Needs GOOGLE_BOOKS_API_KEY (server-side only). Without it, or on any error, returns undefined.
@@ -202,9 +239,9 @@ async function googleBooksCover(title: string, author?: string): Promise<string 
     const lastName = author ? normalizeName(author).split(' ').pop() : '';
     const params = new URLSearchParams({
       q: `intitle:"${title}"` + (lastName ? ` inauthor:"${lastName}"` : ''),
-      maxResults: '10',
+      maxResults: '40', // more editions to choose an older, non-movie one from
       printType: 'books',
-      fields: 'items(volumeInfo(title,authors,language,imageLinks/thumbnail))',
+      fields: 'items(volumeInfo(title,subtitle,description,authors,language,publishedDate,imageLinks/thumbnail))',
       key,
     });
     const controller = new AbortController();
@@ -213,19 +250,9 @@ async function googleBooksCover(title: string, author?: string): Promise<string 
     clearTimeout(timeout);
     if (!res.ok) return undefined;
 
-    const wanted = normalizeTitle(title);
-    const matches = ((await res.json()).items ?? [])
-      .map((item: any) => item.volumeInfo ?? {})
-      .filter(
-        (v: any) =>
-          v.imageLinks?.thumbnail &&
-          normalizeTitle(String(v.title || '')) === wanted &&
-          (!author || authorMatches(author, v.authors))
-      );
-    if (matches.length === 0) return undefined;
-
-    // English editions first; otherwise Google's relevance order
-    const best = matches.find((v: any) => v.language === 'en') ?? matches[0];
+    const volumes = ((await res.json()).items ?? []).map((item: any) => item.volumeInfo ?? {});
+    const best = pickClassicVolume(volumes, title, author);
+    if (!best) return undefined;
     return String(best.imageLinks.thumbnail)
       .replace(/^http:/, 'https:')
       .replace('&edge=curl', '')
